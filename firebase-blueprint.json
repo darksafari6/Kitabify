@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["reader", "writer", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName", "email", "createdAt"]
+    },
+    "Novel": {
+      "title": "Novel",
+      "description": "A novel created by a writer",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "authorId": { "type": "string" },
+        "category": { "type": "string", "enum": ["Romantic", "Islamic", "Horror", "Mystery", "Historical"] },
+        "coverImage": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "likesCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "authorId", "category", "description", "status", "createdAt"]
+    },
+    "Chapter": {
+      "title": "Novel Chapter",
+      "description": "A chapter of a novel",
+      "type": "object",
+      "properties": {
+        "novelId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["novelId", "title", "content", "order", "createdAt"]
+    },
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "User bookmark for a novel",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "novelId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "novelId", "createdAt"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "User like for a novel",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "novelId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "novelId", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "User comment on a novel",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "novelId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "novelId", "text", "createdAt"]
+    },
+    "Rating": {
+      "title": "Rating",
+      "description": "User rating for a novel",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "novelId": { "type": "string" },
+        "score": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "novelId", "score", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles"
+    },
+    "/novels/{novelId}": {
+      "schema": { "$ref": "#/entities/Novel" },
+      "description": "Stores novels"
+    },
+    "/chapters/{chapterId}": {
+      "schema": { "$ref": "#/entities/Chapter" },
+      "description": "Stores novel chapters"
+    },
+    "/bookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/Bookmark" },
+      "description": "Stores user bookmarks"
+    },
+    "/likes/{likeId}": {
+      "schema": { "$ref": "#/entities/Like" },
+      "description": "Stores user likes"
+    },
+    "/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/Comment" },
+      "description": "Stores user comments"
+    },
+    "/ratings/{ratingId}": {
+      "schema": { "$ref": "#/entities/Rating" },
+      "description": "Stores user ratings"
+    }
+  }
+}

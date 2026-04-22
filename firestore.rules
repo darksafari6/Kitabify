@@ -1,0 +1,223 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // User Model
+    function isValidUser(data) {
+      return data.size() >= 3
+        && data.keys().hasAll(['displayName', 'email', 'createdAt'])
+        && data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 200
+        && data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid; // Dummy list constraint
+      
+      allow create: if isVerified()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUser(incoming())
+        && incoming().keys().size() <= 4
+        && incoming().createdAt == request.time
+        && (!('role' in incoming()) || incoming().role == 'reader' || incoming().role == 'writer');
+
+      allow update: if isVerified()
+        && request.auth.uid == userId
+        && isValidUser(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'role'])
+        && incoming().createdAt == existing().createdAt;
+    }
+
+    // Novel Model
+    function isValidNovel(data) {
+      return data.size() >= 6
+        && data.keys().hasAll(['title', 'authorId', 'category', 'description', 'status', 'createdAt'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.authorId is string && data.authorId.size() > 0 && data.authorId.size() <= 128
+        && data.category is string && data.category in ['Romantic', 'Islamic', 'Horror', 'Mystery', 'Historical']
+        && data.description is string && data.description.size() <= 10000
+        && data.status is string && data.status in ['draft', 'published']
+        && data.createdAt is timestamp
+        && (!('updatedAt' in data) || data.updatedAt is timestamp)
+        && (!('coverImage' in data) || (data.coverImage is string && data.coverImage.size() <= 1000))
+        && (!('likesCount' in data) || data.likesCount is number);
+    }
+
+    match /novels/{novelId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && (resource.data.status == 'published' || resource.data.authorId == request.auth.uid);
+
+      allow create: if isVerified()
+        && isValidId(novelId)
+        && isValidNovel(incoming())
+        && incoming().authorId == request.auth.uid
+        && incoming().createdAt == request.time;
+        // && exists(/databases/$(database)/documents/users/$(request.auth.uid)); // Check user exists? Not strictly necessary if auth holds, but good practice.
+
+      allow update: if isVerified()
+        && isValidNovel(incoming())
+        && existing().authorId == request.auth.uid
+        && incoming().authorId == existing().authorId
+        && incoming().createdAt == existing().createdAt
+        && (
+          (incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'description', 'status', 'coverImage', 'updatedAt']) 
+            && incoming().updatedAt == request.time)
+          ||
+          (incoming().diff(existing()).affectedKeys().hasOnly(['likesCount'])) // Could be triggered by likes
+        );
+        
+      allow delete: if isVerified() && existing().authorId == request.auth.uid;
+    }
+
+    // Chapter Model
+    function isValidChapter(data) {
+      return data.size() >= 5
+        && data.keys().hasAll(['novelId', 'title', 'content', 'order', 'createdAt'])
+        && data.novelId is string && data.novelId.size() > 0 && data.novelId.size() <= 128
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.content is string && data.content.size() <= 50000
+        && data.order is number
+        && data.createdAt is timestamp
+        && (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
+    match /chapters/{chapterId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.novelId != null; // Must query by novelId
+
+      allow create: if isVerified()
+        && isValidId(chapterId)
+        && isValidChapter(incoming())
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/novels/$(incoming().novelId))
+        && get(/databases/$(database)/documents/novels/$(incoming().novelId)).data.authorId == request.auth.uid;
+
+      allow update: if isVerified()
+        && isValidChapter(incoming())
+        && incoming().novelId == existing().novelId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && get(/databases/$(database)/documents/novels/$(existing().novelId)).data.authorId == request.auth.uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'order', 'updatedAt']);
+        
+      allow delete: if isVerified() 
+        && get(/databases/$(database)/documents/novels/$(existing().novelId)).data.authorId == request.auth.uid;
+    }
+
+    // Bookmark Model
+    function isValidBookmark(data) {
+      return data.size() == 3
+        && data.keys().hasAll(['userId', 'novelId', 'createdAt'])
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+        && data.novelId is string && data.novelId.size() > 0 && data.novelId.size() <= 128
+        && data.createdAt is timestamp;
+    }
+
+    match /bookmarks/{bookmarkId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isVerified()
+        && isValidId(bookmarkId)
+        && isValidBookmark(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/novels/$(incoming().novelId));
+        
+      allow delete: if isVerified() && existing().userId == request.auth.uid;
+    }
+
+    // Like Model
+    function isValidLike(data) {
+      return data.size() == 3
+        && data.keys().hasAll(['userId', 'novelId', 'createdAt'])
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+        && data.novelId is string && data.novelId.size() > 0 && data.novelId.size() <= 128
+        && data.createdAt is timestamp;
+    }
+
+    match /likes/{likeId} {
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.novelId != null;
+      
+      allow create: if isVerified()
+        && isValidId(likeId)
+        && isValidLike(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/novels/$(incoming().novelId));
+        
+      allow delete: if isVerified() && existing().userId == request.auth.uid;
+    }
+
+    // Comment Model
+    function isValidComment(data) {
+      return data.size() == 4
+        && data.keys().hasAll(['userId', 'novelId', 'text', 'createdAt'])
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+        && data.novelId is string && data.novelId.size() > 0 && data.novelId.size() <= 128
+        && data.text is string && data.text.size() > 0 && data.text.size() <= 1000
+        && data.createdAt is timestamp;
+    }
+
+    match /comments/{commentId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.novelId != null;
+      
+      allow create: if isVerified()
+        && isValidId(commentId)
+        && isValidComment(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/novels/$(incoming().novelId));
+        
+      allow delete: if isVerified() && existing().userId == request.auth.uid;
+    }
+
+    // Rating Model
+    function isValidRating(data) {
+      return data.size() == 4
+        && data.keys().hasAll(['userId', 'novelId', 'score', 'createdAt'])
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+        && data.novelId is string && data.novelId.size() > 0 && data.novelId.size() <= 128
+        && data.score is number && data.score >= 1 && data.score <= 5
+        && data.createdAt is timestamp;
+    }
+
+    match /ratings/{ratingId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.novelId != null;
+      
+      allow create: if isVerified()
+        && isValidId(ratingId)
+        && isValidRating(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/novels/$(incoming().novelId));
+        
+      allow update: if isVerified()
+        && isValidRating(incoming())
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().novelId == existing().novelId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['score']);
+        
+      allow delete: if isVerified() && existing().userId == request.auth.uid;
+    }
+  }
+}
