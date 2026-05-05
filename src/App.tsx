@@ -15,6 +15,7 @@ import ChapterReader from './pages/ChapterReader';
 import WriterDashboard from './pages/WriterDashboard';
 import WriterNovelManager from './pages/WriterNovelManager';
 import Dashboard from './pages/Dashboard';
+import Search from './pages/Search';
 import Bootstrap from './components/Bootstrap';
 
 const AnimatedRoutes = () => {
@@ -109,6 +110,17 @@ const AnimatedRoutes = () => {
               transition={{ duration: 0.3 }}
             >
               <Dashboard />
+            </motion.div>
+          } />
+          <Route path="search" element={
+            <motion.div 
+              key="search"
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }} 
+              transition={{ duration: 0.3 }}
+            >
+              <Search />
             </motion.div>
           } />
         </Route>
