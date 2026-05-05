@@ -58,8 +58,8 @@ export default function Bootstrap() {
           const novelRef = await addDoc(collection(db, 'novels'), {
             title: 'Wafa ki Aakhri Lakeer',
             authorId: 'shab-e-firaq-original',
-            category: 'Romantic',
-            description: 'ایک ایسی داستانِ محبت جو وقت کی حدود سے پرے، روح کی گہرائیوں میں لکھی گئی۔ یہ کہانی ہے ان خاموش جذبوں کی جو کبھی بیان نہ ہو سکے، مگر ان کی تپش نے دو زندگیوں کو ہمیشہ کے لیے بدل دیا۔ محبت، ہجر، وصال اور قربانی کے انوکھے رنگوں سے سجی ایک شاہکار تحریر۔',
+            category: 'Romance',
+            description: 'ایک ایسی داستانِ محبت جو وقت کی حدود سے پرے، روح کی گہرائیوں میں لکھی گئی۔ یہ کہانی ہے ان خاموش جذبوں کی جو کبھی بیان نہ ہو سکے، مگر ان کی تپش نے دو زندگیوں کو ہمیشہ کے لیے بدل دیا۔',
             status: 'published',
             likesCount: 524,
             createdAt: serverTimestamp(),
@@ -72,7 +72,7 @@ export default function Bootstrap() {
         // Seed missing chapters for Wafa ki Aakhri Lakeer
         const chSnap = await getDocs(query(collection(db, 'chapters'), where('novelId', '==', wafaId)));
         const existingOrders = chSnap.docs.map(d => d.data().order);
-
+        
         for (const ch of WAFA_CHAPTERS) {
           if (!existingOrders.includes(ch.order)) {
             console.log(`Seeding Wafa Ch ${ch.order}...`);
@@ -85,47 +85,6 @@ export default function Bootstrap() {
         }
 
         console.log('Seeding process checked.');
-      } catch (err) {
-        console.error('Bootstrap error:', err);
-      }
-    };
-    checkAndSeed();
-  }, [user]);
-
-  return null;
-}
-�وم رہے ہیں۔ اس کی دھڑکنیں ایک انوکھے تال پر رقص کرنے لگی تھیں، جیسے کسی بھولی بسری دعا کا پہلا بول مل گیا ہو ۔ محبت کا یہ سحر ابدی تھا۔`,
-              order: 1
-            },
-            {
-              title: 'ہجر کی دہلیز پر',
-              content: `وقت نے کروٹ بدلی اور وہ لمحے مٹھی سے ریت کی طرح پھسل گئے۔ جس سے ابدی تعلق کی امید تھی، وہی آج اجنبی بن چکا تھا۔ ہجر کی وہ راتیں جب تارے بھی گواہ تھے کہ کس طرح آنکھوں نے نیند سے ناطہ توڑ لیا تھا۔
-              
-"جدائی موت نہیں ہوتی، مگر یہ جینے کا سلیقہ چھین لیتی ہے،" اس نے اپنی ڈائری کے خالی صفحات پر لکھا۔ قلم کانپ رہا تھا اور کاغذ پر گرے آنسوؤں کے نشان اس کی سچی محبت کا ثبوت تھے۔
-              
-محبت میں سب سے مشکل کام انتظار ہوتا ہے۔ وہ انتظار جو شاید کبھی ختم نہ ہو، مگر دل ہے کہ مانتا ہی نہیں۔ وہ ہر آہٹ پر دروازے کی طرف دیکھتی، یہ جانتے ہوئے بھی کہ آنے والا کوئی نہیں۔ تنہائی کا زہر اب اس کی رگوں میں اتر چکا تھا، مگر امید کی ایک رمق اب بھی باقی تھی جو اسے زندہ رکھے ہوئے تھی۔`,
-              order: 2
-            },
-            {
-              title: 'وصالِ یار: ابدی مسرت',
-              content: `برسوں بعد جب پھر سے بہار آئی، تو فضاؤں میں وہی پرانی خوشبو رچی ہوئی تھی۔ وہ منظر جو کبھی ادھورا رہ گیا تھا، آج مکمل ہو رہا تھا۔
-              
-سامنے وہ کھڑا تھا، وہی مسکراہٹ، وہی انداز، لیکن آنکھوں میں اب وہ گہرائی تھی جو صرف دکھوں کی بھٹی سے گزرنے کے بعد حاصل ہوتی ہے۔
-              
-"میں نے کہا تھا نہ، جہاں رشتہ سچا ہو، وہاں فاصلے کبھی جیت نہیں سکتے،" اس نے اس کا ہاتھ تھامتے ہوئے کہا۔ اس پل ساری دنیا تھم گئی تھی۔ تپتی دھوپ میں ٹھنڈی چھاؤں کا وہ احساس، وہ وصال جس کی تمنا اس نے ہر دعا میں کی تھی۔ ان کے دلوں کی خاموشی اب ہزاروں لفظوں سے بڑھ کر تھی، یہ ایک نئے جنم کی نوید تھی، ایک ایسا رشتہ جو زمان و مکان کی قید سے آزاد ہو چکا تھا۔ یہ وفا کی وہ آخری لکیر تھی جسے اب کوئی نہیں مٹا سکتا تھا۔`,
-              order: 3
-            }
-          ];
-
-          for (const ch of chapters) {
-            await addDoc(collection(db, 'chapters'), {
-              ...ch,
-              novelId: novelRef.id,
-              createdAt: serverTimestamp()
-            });
-          }
-          console.log('Seeding finished.');
-        }
       } catch (err) {
         console.error('Bootstrap error:', err);
       }

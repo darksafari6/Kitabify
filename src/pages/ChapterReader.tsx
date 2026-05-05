@@ -31,7 +31,7 @@ export default function ChapterReader() {
   const [loading, setLoading] = useState(true);
   
   // Reader Settings
-  const [fontSize, setFontSize] = useState(24); // Start slightly smaller as requested
+  const [fontSize, setFontSize] = useState(22); // Start slightly smaller as requested
   const [theme, setTheme] = useState<Theme>('dark');
   const [showSettings, setShowSettings] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
