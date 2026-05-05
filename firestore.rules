@@ -58,15 +58,14 @@ service cloud.firestore {
     }
 
     match /novels/{novelId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn() && (resource.data.status == 'published' || resource.data.authorId == request.auth.uid);
+      allow get: if resource.data.status == 'published' || (isSignedIn() && resource.data.authorId == request.auth.uid);
+      allow list: if resource.data.status == 'published' || (isSignedIn() && resource.data.authorId == request.auth.uid);
 
       allow create: if isVerified()
         && isValidId(novelId)
         && isValidNovel(incoming())
         && incoming().authorId == request.auth.uid
         && incoming().createdAt == request.time;
-        // && exists(/databases/$(database)/documents/users/$(request.auth.uid)); // Check user exists? Not strictly necessary if auth holds, but good practice.
 
       allow update: if isVerified()
         && isValidNovel(incoming())
@@ -96,8 +95,8 @@ service cloud.firestore {
     }
 
     match /chapters/{chapterId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn() && resource.data.novelId != null; // Must query by novelId
+      allow get: if get(/databases/$(database)/documents/novels/$(resource.data.novelId)).data.status == 'published' || (isSignedIn() && get(/databases/$(database)/documents/novels/$(resource.data.novelId)).data.authorId == request.auth.uid);
+      allow list: if resource.data.novelId != null; // Rely on novelId obfuscation and query restriction
 
       allow create: if isVerified()
         && isValidId(chapterId)
