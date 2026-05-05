@@ -1,16 +1,21 @@
 import { useEffect } from 'react';
 import { db } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 import { collection, query, getDocs, addDoc, serverTimestamp, where } from 'firebase/firestore';
 
 export default function Bootstrap() {
+  const { user } = useAuth();
+
   useEffect(() => {
+    if (user?.email !== 'darksafari6@gmail.com') return;
+
     const checkAndSeed = async () => {
       try {
         const q = query(collection(db, 'novels'), where('title', '==', 'Wafa ki Aakhri Lakeer'));
         const snap = await getDocs(q);
         
         if (snap.empty) {
-          console.log('Seeding featured novel...');
+          console.log('Admin detected. Seeding featured novel...');
           const novelRef = await addDoc(collection(db, 'novels'), {
             title: 'Wafa ki Aakhri Lakeer',
             authorId: 'shab-e-firaq-original',
@@ -65,7 +70,7 @@ export default function Bootstrap() {
       }
     };
     checkAndSeed();
-  }, []);
+  }, [user]);
 
   return null;
 }
